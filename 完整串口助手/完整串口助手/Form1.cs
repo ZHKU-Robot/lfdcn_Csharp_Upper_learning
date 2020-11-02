@@ -31,14 +31,8 @@ namespace 完整串口助手
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            //添加COM1-COM20
-            for(int i = 1; i < 20; i++)
-            {
-                comboBox1.Items.Add("COM" + i.ToString());
-            }
-            comboBox1.Text = "COM1";//设置默认串口
+            SearchAndAddSerialToComboBox(serialPort1, comboBox1);
             comboBox2.Text = "115200";//设置默认波特率
-
             serialPort1.DataReceived += new SerialDataReceivedEventHandler(port_DataReceived);//中断事件
         }
 
@@ -56,20 +50,6 @@ namespace 完整串口助手
                 data = (byte)serialPort1.ReadByte();//此处需要强制类型转换，由于ReadByte为整型，需要将其转换为byte类型数据
                 string str = Convert.ToString(data, 16).ToUpper();//将接收数据转换成十六进制大写的字符串
                 textBox1.AppendText("0x" + (str.Length == 1 ? "0" + str : str) + " ");//补充0，0xA转换为0x0A
-            }
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                serialPort1.Close();//关闭按钮
-                button2.Enabled = true;//开启“打开串口”按钮
-                button3.Enabled = false;//取消“关闭串口”按钮
-            }
-            catch(Exception err)
-            {
- //               MessageBox.Show(System.Exception,"ERROR");
             }
         }
 
@@ -91,7 +71,6 @@ namespace 完整串口助手
                             MessageBox.Show("串口数据发送错误，请检查串口连接","ERROR");
                             serialPort1.Close();
                             button2.Enabled = true;
-                            button3.Enabled = false;
                         }
                     }
                     else//数值发送，且只能发送数值，如0xAA,则只需要发送AA即可，且默认无换行符
@@ -113,17 +92,45 @@ namespace 完整串口助手
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            try
+            if(serialPort1.IsOpen)                                                                      //判断是否开启，以进行文字切换
             {
-                serialPort1.PortName = comboBox1.Text;//设置预定的串口名
-                serialPort1.BaudRate = Convert.ToInt32(comboBox2.Text, 10);//设置预定的波特率
-                serialPort1.Open();//打开串口
-                button2.Enabled = false;//取消“打开串口”按钮
-                button3.Enabled = true;//开启“关闭串口”按钮
+                serialPort1.Close();
+                button2.Text = "打开串口";
             }
-            catch
+            else
             {
-                MessageBox.Show("串口打开失败，请检查串口连接", "ERROR");
+                try
+                {
+                    serialPort1.PortName = comboBox1.Text;
+                    serialPort1.BaudRate = Convert.ToInt32(comboBox2.Text);
+                    serialPort1.Open();
+                    button2.Text = "关闭串口";                                                          //文字切换
+                }
+                catch
+                {
+                    MessageBox.Show("串口打开失败，请检查串口的连接","ERROR");
+                }
+            }
+        }
+
+        /*搜索并添加串口号到ComcoBox中*/
+        private void SearchAndAddSerialToComboBox(SerialPort MyPort, ComboBox MyBox)
+        {                                                               
+            string Buffer;                                                                              //缓存
+            MyBox.Items.Clear();                                                                        //清空ComboBox内容
+            for (int i = 1; i < 20; i++)
+            {
+                try                                                                                     //遍历完成串口的添加
+                {
+                    Buffer = "COM" + i.ToString();
+                    MyPort.PortName = Buffer;
+                    MyPort.Open();                                                                      //如果失败，continue
+                    MyBox.Items.Add(Buffer);                                                            //打开成功，添加至下拉列表
+                    MyPort.Close();                                                                     //关闭
+                }
+                catch
+                {
+                }
             }
         }
     }
